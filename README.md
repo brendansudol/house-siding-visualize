@@ -10,7 +10,7 @@ python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
 
 Open http://127.0.0.1:4173/. Source lives in `dist/`: `house.js` builds the approximate geometry; `app.js` manages paint controls, presets, browser-local saved looks and PNG exports; `style.css` contains responsive styling. User reference photos are resized copies under `dist/photos/`.
 
-The site is private in Sites. Local storage remains local to each browser and origin. The only external runtime request is optional Google Fonts; system fonts provide a fallback. No map or location services are used.
+The GitHub Pages site and this repository are public, including the reference photos. The original Sites deployment remains private. Local storage remains local to each browser and origin, so saved looks are not transferred between the two URLs. The only external runtime request is optional Google Fonts; system fonts provide a fallback. No map or location services are used.
 
 ## Model assumptions
 
@@ -19,3 +19,9 @@ Photo-derived approximation, not measured geometry. Main front gable, left porch
 ## Agent tools
 
 When the browser supports `document.modelContext`, `get_house_palette` and `set_house_palette` expose the same paint state and rendering path as the interface. Unsupported browsers operate normally without them.
+
+## GitHub Pages
+
+The site is published at https://brendansudol.github.io/house-siding-visualize/.
+
+The `Deploy to GitHub Pages` workflow publishes `dist/` when that folder or the workflow changes on `main`. It can also be run manually from GitHub Actions. Repository **Settings → Pages → Source** must be set to **GitHub Actions**. The app uses relative asset paths so it works under the repository subpath without a build step.
