@@ -16,6 +16,8 @@ The GitHub Pages site and this repository are public, including the reference ph
 
 Photo-derived approximation, not measured geometry. Main front gable, left porch, side cross gable, window rhythm, roof, trim, chimney, rear posts and exposed basement are represented. Hidden roof intersections, unobserved window placements, overall dimensions and landscape are inferred. Lighting presets are illustrative and not a geolocated sun simulation. The body uses profiled lap siding, and the gables use staggered shingle courses. Gables always match the lap siding color, including when restoring a previously saved look. The 145 paint swatches use Sherwin-Williams’ published digital values from its exterior house, accent, and front-door collections, filtered to active colors marked for exterior use. Names, SW numbers, and source links are stored in `dist/paint-colors.js`; these are digital representations, not calibrated renderings. Verify choices with physical paint samples.
 
+The window schedule is in `dist/window-layout.js`, with photo references on observed openings and `inferred: true` on unphotographed ones. It distinguishes joined banks from separately cased windows: two front upstairs pairs, a triple beside the porch on the left wall, and two separate upper windows over five small windows on the downhill elevation. Window dimensions remain estimates; the model uses recessed one-over-one sashes and a separate fixed lower rear opening.
+
 ## Agent tools
 
 When the browser supports `document.modelContext`, `get_house_palette` and `set_house_palette` expose the same paint state and rendering path as the interface. Unsupported browsers operate normally without them.

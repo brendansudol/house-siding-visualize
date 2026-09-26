@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 import { createLapBoardGeometry, createGableShingles } from './siding-geometry.js';
+import { windowLayout } from './window-layout.js';
 
 export function createHouse(container, colors) {
   const scene = new THREE.Scene();
@@ -82,22 +83,40 @@ export function createHouse(container, colors) {
     }
     return g;
   }
-  function windowUnit(x,y,z,w=1.35,h=1.85,rot=0,count=1){
-    const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=rot;house.add(g);
-    const total=w*count+.10*(count-1);
-    box(total+.25,h+.24,.13,0,0,.015,materials.trim,0,g);
-    box(total+.10,h+.09,.14,0,0,.09,sash,0,g);
+  const windowRecess=mat('#181e21'),upperGlass=mat('#25313a',.33),lowerGlass=mat('#303c41',.37);
+  upperGlass.metalness=.18;lowerGlass.metalness=.12;
+  // Fine, subdued blind lines replace the old widely spaced bars across the glass.
+  const blindCanvas=document.createElement('canvas');blindCanvas.width=32;blindCanvas.height=256;
+  const bc=blindCanvas.getContext('2d');bc.fillStyle='#354044';bc.fillRect(0,0,32,256);
+  for(let y=0;y<256;y+=8){bc.fillStyle='#465054';bc.fillRect(0,y,32,1);bc.fillStyle='#2e383d';bc.fillRect(0,y+1,32,1);}
+  const blindTexture=new THREE.CanvasTexture(blindCanvas);blindTexture.colorSpace=THREE.SRGBColorSpace;
+  const blindGlass=new THREE.MeshStandardMaterial({map:blindTexture,roughness:.48,metalness:.08});
+  function windowUnit({id,x,y,z,width:w,height:h,rotation=0,count=1,style='double-hung',blinds=false,reference,inferred=false}){
+    const g=new THREE.Group();g.name=id;g.position.set(x,y,z);g.rotation.y=rotation;
+    g.userData={surface:'window',count,style,reference,inferred};house.add(g);
+    const gap=.055,total=w*count+gap*(count-1),casing=.105,rail=.043;
+    // Recessed opening, then separate jambs/head/sill rather than stacked white slabs.
+    box(total,h,.025,0,0,.030,windowRecess,0,g);
+    for(const side of [-1,1])box(casing,h+casing*2,.105,side*(total+casing)/2,0,.075,materials.trim,0,g);
+    box(total+casing*2,.105,.105,0,h/2+.0525,.075,materials.trim,0,g);
+    box(total+casing*2+.035,.030,.125,0,h/2+.115,.082,materials.trim,0,g);
+    box(total+.28,.063,.19,0,-h/2-.032,.112,materials.trim,0,g);
+    box(total+.12,.072,.074,0,-h/2-.096,.058,materials.trim,0,g);
     for(let i=0;i<count;i++){
-      const xx=(i-(count-1)/2)*(w+.10);
-      box(w-.09,h-.09,.06,xx,0,.175,glass,0,g);
-      box(.045,h,.075,xx-w/2+.02,0,.21,sash,0,g);box(.045,h,.075,xx+w/2-.02,0,.21,sash,0,g);
-      box(w,.055,.075,xx,0,.22,sash,0,g);
-      // Subtle reflection and interior blinds.
-      const reflection=mat('#425657',.3);box(w-.15,h*.41,.006,xx,h*.23,.21,reflection,0,g);
-      for(let by=-h/2+.13;by<-.12;by+=.085)box(w-.15,.012,.008,xx,by,.213,mat('#576463'),0,g);
+      const xx=(i-(count-1)/2)*(w+gap);
+      // One-over-one double-hung sashes, with a narrow meeting rail at mid-height.
+      for(const side of [-1,1])box(rail,h,.045,xx+side*(w-rail)/2,0,.083,sash,0,g);
+      for(const side of [-1,1])box(w,rail,.045,xx,side*(h-rail)/2,.083,sash,0,g);
+      if(style==='fixed'){
+        box(w-rail*2,h-rail*2,.012,xx,0,.065,upperGlass,0,g);
+      }else{
+        const paneHeight=(h-rail*3)/2,paneY=(h-rail)/4;
+        box(w-rail*2,paneHeight,.012,xx,paneY,.065,upperGlass,0,g);
+        box(w-rail*2,paneHeight,.012,xx,-paneY,.078,blinds?blindGlass:lowerGlass,0,g);
+        box(w,rail,.060,xx,0,.092,sash,0,g);
+      }
+      if(i<count-1)box(gap,h,.085,xx+(w+gap)/2,0,.077,materials.trim,0,g);
     }
-    box(total+.36,.095,.25,0,-h/2-.13,.09,materials.trim,0,g);
-    box(total+.35,.075,.19,0,h/2+.15,.02,materials.trim,0,g);
     return g;
   }
   // Front is +Z. The terrain falls toward -Z, exposing a basement.
@@ -115,7 +134,8 @@ export function createHouse(container, colors) {
   // Lower front-side roof and rear addition.
   gableRoof(4.3,4.2,3.86,1.11,-2.47,2.05);
   gable(4.3,3.86,1.11,-2.47,4.18);
-  gableRoof(4.3,4,3.86,.80,-2.47,-4.74);
+  // The downhill window row has clear heads below the eave in IMG_0268.
+  gableRoof(4.3,4,3.86,.80,-2.47,-4.74,0,false);
   gable(4.3,3.86,.80,-2.47,-6.8,Math.PI);
   for(const x of [-4.56,4.56])for(const z of [-6.65,3.86])box(.19,3.05,.19,x,2.39,z);
   for(const x of [-.35,4.56])for(const z of [-5.45,3.86])box(.19,2.82,.19,x,5.25,z);
@@ -123,10 +143,8 @@ export function createHouse(container, colors) {
   box(9.22,.18,10.65,0,.9,-1.4,materials.trim);
   // Horizontal trim separates the front shingle gable from the windows below.
   box(5.04,.26,.22,2.1,6.52,4.01,materials.trim);
-  // Two paired upstairs windows, one pair beside the porch.
-  windowUnit(.67,5.27,3.91,.84,1.60,0,2);windowUnit(3.11,5.27,3.91,.84,1.60,0,2);
-  windowUnit(2.9,2.33,3.94,1.01,1.73,0,2);
-  windowUnit(-3.8,2.33,3.94,.83,1.97);windowUnit(-.50,2.33,3.94,.83,1.97);
+  // Counts, groupings and placement are recorded against the supplied photos.
+  for(const opening of windowLayout)windowUnit(opening);
   // Craftsman front door.
   box(1.30,2.35,.13,-2.1,2.085,3.93,materials.trim);
   box(1.04,2.17,.15,-2.1,2.02,4.02,materials.door);
@@ -164,18 +182,6 @@ export function createHouse(container, colors) {
     beam([x,2.18,6.56],[x,1.02,8.13],.095,.12);
     for(let i=0;i<8;i++){const t=i/8,y=1.03-t*1.04;box(.04,.9,.04,x,y+.54,6.64+t*1.49);}
   }
-  // Left elevation windows, matching the long wall and cross gable rhythm.
-  windowUnit(-4.62,2.28,2.55,1.02,1.9,-Math.PI/2,2);
-  windowUnit(-4.62,2.30,-.72,1.0,1.9,-Math.PI/2,2);
-  windowUnit(-4.62,2.25,-4.80,.85,1.68,-Math.PI/2,2);
-  windowUnit(-4.65,5.12,-.48,.84,1.62,-Math.PI/2,2);
-  // Right elevation and rear: inferred placements where photos don't show detail.
-  for(const z of [1.9,-1.6,-4.4])windowUnit(4.62,2.35,z,.93,1.68,Math.PI/2,1);
-  for(const z of [1.35,-2.4])windowUnit(4.62,5.24,z,.91,1.53,Math.PI/2,1);
-  windowUnit(2.10,5.24,-5.53,.85,1.62,Math.PI,2);
-  for(const x of [-3.6,-1.65,.25,2.8])windowUnit(x,2.72,-6.73,.78,.89,Math.PI,1);
-  windowUnit(-4.61,-.58,-2.6,.72,.67,-Math.PI/2);windowUnit(-4.61,-.58,.6,.72,.67,-Math.PI/2);
-  windowUnit(1.8,-.85,-6.73,.78,1.38,Math.PI);
   // Rear cantilever with timber posts visible in the downhill photograph.
   for(const x of [-4.38,-1.4,.20])box(.15,3.30,.15,x,-.80,-6.48,wood);
   // Chimney, rain gutters and downspouts.
@@ -214,7 +220,7 @@ export function createHouse(container, colors) {
   const ambient=new THREE.HemisphereLight('#f6faff','#939d83',2.5);scene.add(ambient);
   const sun=new THREE.DirectionalLight('#fff4de',3.0);sun.position.set(-10,18,15);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-18;sun.shadow.camera.right=18;sun.shadow.camera.top=20;sun.shadow.camera.bottom=-18;sun.shadow.normalBias=.025;sun.shadow.bias=-.0001;sun.shadow.radius=3;scene.add(sun);sun.target.position.set(0,1,0);scene.add(sun.target);
   const fill=new THREE.DirectionalLight('#dee9f5',.55);fill.position.set(10,8,-8);scene.add(fill);
-  const views={perspective:[-17,10.5,23],front:[-.25,5.0,29],side:[-28,9,.2],rear:[14,8,-27]};
+  const views={perspective:[-17,10.5,23],front:[-.25,5.0,29],side:[-28,9,.2],rear:[1.8,2.4,-29]};
   let animation=null;
   function view(name,instant=false){const goal=views[name]||views.perspective;const target=new THREE.Vector3(...goal);if(container.clientWidth<550)target.multiplyScalar(1.23);else target.multiplyScalar(1.06);if(instant||matchMedia('(prefers-reduced-motion: reduce)').matches){camera.position.copy(target);controls.target.set(0,3.6,0);controls.update();}else animation={from:camera.position.clone(),to:target,fromTarget:controls.target.clone(),start:performance.now()};}
   controls.addEventListener('start',()=>{animation=null;container.dispatchEvent(new CustomEvent('orbitstart'));});
