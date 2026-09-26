@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
 import { createLapBoardGeometry, createGableShingles } from './siding-geometry.js';
-import { windowLayout } from './window-layout.js';
+import { windowLayout } from './window-layout.js?v=776533fb4ce2';
 
 export function createHouse(container, colors) {
   const scene = new THREE.Scene();

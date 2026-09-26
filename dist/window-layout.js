@@ -3,12 +3,16 @@
 // Separately cased windows are separate entries, even when aligned in a row.
 const left = -Math.PI / 2, right = Math.PI / 2, rear = Math.PI;
 export const windowLayout = [
-  // IMG_0263 / IMG_0266: two upstairs pairs, a lower pair, and porch singles.
-  {id:'front-upper-left',x:.91,y:5.31,z:3.94,width:.72,height:1.67,count:2,blinds:true,reference:'IMG_0263'},
-  {id:'front-upper-right',x:3.10,y:5.31,z:3.94,width:.72,height:1.67,count:2,blinds:true,reference:'IMG_0263'},
-  {id:'front-lower-right',x:2.98,y:2.31,z:3.94,width:.75,height:1.81,count:2,blinds:true,reference:'IMG_0263'},
-  {id:'porch-left',x:-3.72,y:2.32,z:3.94,width:.70,height:1.91,reference:'IMG_0266'},
-  {id:'porch-right',x:-.49,y:2.32,z:3.94,width:.70,height:1.91,reference:'IMG_0266'},
+  // IMG_0263 / IMG_0266: front casing proportions checked in a rectified photo
+  // plane, using the existing facade width and entry-door height as model anchors.
+  // Upstairs banks are balanced about the gable and clear the projecting porch
+  // roof; the lower pair is offset left.
+  // Porch heads align with the entry and the shorter windows stop near the rail.
+  {id:'front-upper-left',x:1.03,y:5.42,z:3.94,width:.63,height:1.18,count:2,blinds:true,reference:'IMG_0263'},
+  {id:'front-upper-right',x:3.17,y:5.42,z:3.94,width:.63,height:1.18,count:2,blinds:true,reference:'IMG_0263'},
+  {id:'front-lower-right',x:2.71,y:2.565,z:3.94,width:.665,height:1.31,count:2,blinds:true,reference:'IMG_0263'},
+  {id:'porch-left',x:-3.79,y:2.58,z:3.94,width:.90,height:1.24,reference:'IMG_0266'},
+  {id:'porch-right',x:-.47,y:2.58,z:3.94,width:.90,height:1.24,reference:'IMG_0266'},
   // IMG_0267: three beside the porch, two below the cross-gable, two above.
   {id:'side-front-triple',x:-4.64,y:2.32,z:2.66,width:.65,height:1.84,count:3,rotation:left,blinds:true,reference:'IMG_0267'},
   {id:'side-middle-pair',x:-4.64,y:2.32,z:-.56,width:.73,height:1.84,count:2,rotation:left,blinds:true,reference:'IMG_0267'},

@@ -1,4 +1,4 @@
-import { createHouse } from './house.js?v=932f57dc36ec';
+import { createHouse } from './house.js?v=6aada2ddc6db';
 import { paintColors as palette } from './paint-colors.js';
 const sw=number=>palette.find(p=>p.code===`SW ${number}`).hex;
 const presets=[
