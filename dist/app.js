@@ -8,7 +8,7 @@ const presets=[
   {name:'Accessible Beige',siding:sw(7036),trim:sw(7005),door:sw(7069)}
 ];
 let state={siding:presets[0].siding,trim:presets[0].trim,door:presets[0].door,gable:presets[0].siding,matchGable:true,light:'day'},surface='siding',model=null,saved=[];
-try{const stored=JSON.parse(localStorage.getItem('westover-looks')||'[]');if(Array.isArray(stored))saved=stored.filter(x=>x&&typeof x.id==='string'&&validState(x.colors)).slice(0,24);}catch{}
+try{const stored=JSON.parse(localStorage.getItem('westover-looks')||'[]');if(Array.isArray(stored))saved=stored.filter(x=>x&&typeof x.id==='string'&&validState(x.colors)).slice(0,24).map(x=>({...x,colors:{...x.colors,gable:x.colors.siding,matchGable:true}}));}catch{}
 function validHex(x){return typeof x==='string'&&/^#[0-9a-f]{6}$/i.test(x);}
 function validState(x){return x&&['siding','trim','door','gable'].every(k=>validHex(x[k]))&&typeof x.matchGable==='boolean';}
 function paint(hex){return palette.find(p=>p.hex===hex.toLowerCase());}
@@ -17,10 +17,10 @@ function code(hex){return paint(hex)?.code||hex.toUpperCase();}
 function toast(message){const el=document.getElementById('toast');el.textContent=message;el.classList.add('visible');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('visible'),2600);}
 function update(){
   document.getElementById('color-error').textContent='';
-  if(state.matchGable)state.gable=state.siding;
+  state.matchGable=true;state.gable=state.siding;
   model?.setColors(state);
   for(const k of ['siding','trim','door','gable']){
-    document.getElementById('name-'+k).textContent=k==='gable'&&state.matchGable?'Match siding':name(state[k]);
+    document.getElementById('name-'+k).textContent=k==='gable'&&state.matchGable?'Matches siding':name(state[k]);
     document.querySelector(`[data-surface="${k}"] .surface-chip`).style.background=state[k];
   }
   const selected=paint(state[surface]),source=document.getElementById('paint-source');
@@ -31,11 +31,10 @@ function update(){
   document.getElementById('hex-input').value=state[surface].toUpperCase();
   document.getElementById('color-picker').value=state[surface];
   document.querySelectorAll('.swatch').forEach(b=>{const active=b.dataset.color===state[surface];b.classList.toggle('active',active);b.setAttribute('aria-pressed',active);});
-  document.getElementById('match-gable').checked=state.matchGable;
   document.querySelectorAll('.preset').forEach((b,i)=>b.classList.toggle('active',['siding','trim','door'].every(k=>presets[i][k]===state[k])));
   document.getElementById('saved-count').textContent=saved.length;
 }
-function setColor(hex){if(!validHex(hex))throw new Error('Use a six-digit hex color, such as #6F7D70.');state[surface]=hex.toLowerCase();if(surface==='gable')state.matchGable=false;document.getElementById('color-error').textContent='';update();}
+function setColor(hex){if(!validHex(hex))throw new Error('Use a six-digit hex color, such as #6F7D70.');state[surface]=hex.toLowerCase();document.getElementById('color-error').textContent='';update();}
 function renderSwatches(){
   const filter=document.getElementById('color-family').value;
   const query=document.getElementById('color-search').value.toLowerCase().replace(/\s+/g,'');
@@ -50,13 +49,12 @@ function renderSwatches(){
   document.getElementById('no-colors').hidden=colors.length>0;
   update();
 }
-document.querySelectorAll('[data-surface]').forEach(b=>b.addEventListener('click',()=>{surface=b.dataset.surface;document.querySelectorAll('[data-surface]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',x===b);});document.getElementById('match-row').hidden=surface!=='gable';update();}));
+document.querySelectorAll('button[data-surface]').forEach(b=>b.addEventListener('click',()=>{surface=b.dataset.surface;document.querySelectorAll('button[data-surface]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',x===b);});update();}));
 document.getElementById('color-family').addEventListener('change',renderSwatches);
 document.getElementById('color-search').addEventListener('input',renderSwatches);
 document.getElementById('color-picker').addEventListener('input',e=>setColor(e.target.value));
 document.getElementById('hex-input').addEventListener('change',e=>{let c=e.target.value.trim();if(!c.startsWith('#'))c='#'+c;try{setColor(c);}catch(err){document.getElementById('color-error').textContent=err.message;}});
 document.getElementById('hex-input').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur();});
-document.getElementById('match-gable').addEventListener('change',e=>{state.matchGable=e.target.checked;update();});
 document.querySelectorAll('[data-light]').forEach(b=>b.addEventListener('click',()=>{state.light=b.dataset.light;model?.lighting(state.light);document.querySelectorAll('[data-light]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',x===b);});}));
 function setView(v){model?.view(v);document.querySelectorAll('[data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===v);b.setAttribute('aria-pressed',b.dataset.view===v);});}
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
@@ -105,11 +103,11 @@ if(modelContext?.registerTool){
   const tools=[{
     name:'get_house_palette',title:'Read house paint colors',description:'Read the current siding, trim, door and shingle gable colors, with the current lighting and Sherwin-Williams exterior swatches.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:false},execute(){return {colors:{...state},swatches:palette.map(({name,code,hex})=>({name,code,hex}))};}
   },{
-    name:'set_house_palette',title:'Change house paint colors',description:'Apply hex paint colors to the 3D house. Changes the visible preview only; does not save a combination.',inputSchema:{type:'object',properties:{siding:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},trim:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},door:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},gable:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},matchGable:{type:'boolean'},light:{type:'string',enum:['day','cloud','evening']}},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute(input){
+    name:'set_house_palette',title:'Change house paint colors',description:'Apply hex colors to the lap siding, trim and door. Shingle gables always match the lap siding. Changes the visible preview only; does not save a combination.',inputSchema:{type:'object',properties:{siding:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},trim:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},door:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},light:{type:'string',enum:['day','cloud','evening']}},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute(input){
       if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Expected a paint palette object.');
-      const allowed=['siding','trim','door','gable','matchGable','light'];
-      for(const [key,value] of Object.entries(input)){if(!allowed.includes(key))throw new Error('Unknown paint setting: '+key);if(['siding','trim','door','gable'].includes(key)&&!validHex(value))throw new Error('Colors must use six-digit hex notation.');if(key==='matchGable'&&typeof value!=='boolean')throw new Error('matchGable must be true or false.');if(key==='light'&&!['day','cloud','evening'].includes(value))throw new Error('Unknown lighting condition.');}
-      const next={...state,...input};for(const key of ['siding','trim','door','gable'])next[key]=next[key].toLowerCase();if(input.gable&&!('matchGable' in input))next.matchGable=false;state=next;update();model?.lighting(state.light);document.querySelectorAll('[data-light]').forEach(b=>{b.classList.toggle('active',b.dataset.light===state.light);b.setAttribute('aria-pressed',b.dataset.light===state.light);});model?.render();return {colors:{...state}};
+      const allowed=['siding','trim','door','light'];
+      for(const [key,value] of Object.entries(input)){if(!allowed.includes(key))throw new Error('Unknown paint setting: '+key);if(['siding','trim','door','gable'].includes(key)&&!validHex(value))throw new Error('Colors must use six-digit hex notation.');if(key==='light'&&!['day','cloud','evening'].includes(value))throw new Error('Unknown lighting condition.');}
+      const next={...state,...input};for(const key of ['siding','trim','door','gable'])next[key]=next[key].toLowerCase();state=next;update();model?.lighting(state.light);document.querySelectorAll('[data-light]').forEach(b=>{b.classList.toggle('active',b.dataset.light===state.light);b.setAttribute('aria-pressed',b.dataset.light===state.light);});model?.render();return {colors:{...state}};
     }
   }];
   for(const tool of tools){try{Promise.resolve(modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}}

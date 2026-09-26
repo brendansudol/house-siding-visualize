@@ -121,6 +121,8 @@ export function createHouse(container, colors) {
   for(const x of [-.35,4.56])for(const z of [-5.45,3.86])box(.19,2.82,.19,x,5.25,z);
   for(const x of [-4.56,-.34])for(const z of [-2.4,1.45])box(.19,2.53,.19,x,5.115,z);
   box(9.22,.18,10.65,0,.9,-1.4,materials.trim);
+  // Horizontal trim separates the front shingle gable from the windows below.
+  box(5.04,.26,.22,2.1,6.52,4.01,materials.trim);
   // Two paired upstairs windows, one pair beside the porch.
   windowUnit(.67,5.27,3.91,.84,1.60,0,2);windowUnit(3.11,5.27,3.91,.84,1.60,0,2);
   windowUnit(2.9,2.33,3.94,1.01,1.73,0,2);
