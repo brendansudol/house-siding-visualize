@@ -1,17 +1,58 @@
 import { createHouse } from './house.js';
-const palette=[['Mountain sage','#6f7d70','greens'],['Laurel green','#536757','greens'],['Deep forest','#344f42','greens'],['Olive grove','#7c8064','greens'],['Silver sage','#a4ae9a','greens'],['Eucalyptus','#899d92','greens'],['Blue ridge','#576c78','blues'],['Storm blue','#435a6b','blues'],['Midnight','#2f414c','blues'],['Harbor gray','#7b8e96','blues'],['Slate blue','#667f8b','blues'],['Pale sky','#a5b7b8','blues'],['Soft ivory','#efece2','neutrals'],['Limestone','#d3cbb9','neutrals'],['River stone','#aaa797','neutrals'],['Weathered gray','#858680','neutrals'],['Charcoal','#454a48','neutrals'],['Soft black','#2d3330','neutrals'],['Warm linen','#c4b9a2','warm'],['Golden straw','#b4a072','warm'],['Clay','#ac8269','warm'],['Burnished copper','#a26847','warm'],['Terra cotta','#8f5644','warm'],['Deep umber','#655346','warm']];
-const presets=[{name:'Mountain sage',siding:'#6f7d70',trim:'#efece2',door:'#a26847'},{name:'Blue ridge',siding:'#576c78',trim:'#efece2',door:'#a68a5b'},{name:'Forest retreat',siding:'#344f42',trim:'#d3cbb9',door:'#8f7154'},{name:'Warm & welcoming',siding:'#c4b9a2',trim:'#efece2',door:'#344f42'}];
-let state={siding:'#6f7d70',trim:'#efece2',door:'#a26847',gable:'#6f7d70',matchGable:true,light:'day'},surface='siding',model=null,saved=[];
+import { paintColors as palette } from './paint-colors.js';
+const sw=number=>palette.find(p=>p.code===`SW ${number}`).hex;
+const presets=[
+  {name:'Retreat',siding:sw(6207),trim:sw(7008),door:sw(6340)},
+  {name:'Labradorite',siding:sw(7619),trim:sw(7008),door:sw(2839)},
+  {name:'Hunt Club',siding:sw(6468),trim:sw(7042),door:sw(7508)},
+  {name:'Accessible Beige',siding:sw(7036),trim:sw(7005),door:sw(7069)}
+];
+let state={siding:presets[0].siding,trim:presets[0].trim,door:presets[0].door,gable:presets[0].siding,matchGable:true,light:'day'},surface='siding',model=null,saved=[];
 try{const stored=JSON.parse(localStorage.getItem('westover-looks')||'[]');if(Array.isArray(stored))saved=stored.filter(x=>x&&typeof x.id==='string'&&validState(x.colors)).slice(0,24);}catch{}
 function validHex(x){return typeof x==='string'&&/^#[0-9a-f]{6}$/i.test(x);}
 function validState(x){return x&&['siding','trim','door','gable'].every(k=>validHex(x[k]))&&typeof x.matchGable==='boolean';}
-function name(hex){return palette.find(p=>p[1]===hex.toLowerCase())?.[0]||'Custom color';}
+function paint(hex){return palette.find(p=>p.hex===hex.toLowerCase());}
+function name(hex){return paint(hex)?.name||'Custom color';}
+function code(hex){return paint(hex)?.code||hex.toUpperCase();}
 function toast(message){const el=document.getElementById('toast');el.textContent=message;el.classList.add('visible');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('visible'),2600);}
-function update(){document.getElementById('color-error').textContent='';if(state.matchGable)state.gable=state.siding;model?.setColors(state);for(const k of ['siding','trim','door','gable']){document.getElementById('name-'+k).textContent=k==='gable'&&state.matchGable?'Match siding':name(state[k]);document.querySelector(`[data-surface="${k}"] .surface-chip`).style.background=state[k];}document.getElementById('selected-name').textContent=name(state[surface]);document.getElementById('selected-hex').textContent=state[surface].toUpperCase();document.getElementById('hex-input').value=state[surface].toUpperCase();document.getElementById('color-picker').value=state[surface];document.querySelectorAll('.swatch').forEach(b=>{const active=b.dataset.color===state[surface];b.classList.toggle('active',active);b.setAttribute('aria-pressed',active);});document.getElementById('match-gable').checked=state.matchGable;document.querySelectorAll('.preset').forEach((b,i)=>b.classList.toggle('active',['siding','trim','door'].every(k=>presets[i][k]===state[k])));document.getElementById('saved-count').textContent=saved.length;}
+function update(){
+  document.getElementById('color-error').textContent='';
+  if(state.matchGable)state.gable=state.siding;
+  model?.setColors(state);
+  for(const k of ['siding','trim','door','gable']){
+    document.getElementById('name-'+k).textContent=k==='gable'&&state.matchGable?'Match siding':name(state[k]);
+    document.querySelector(`[data-surface="${k}"] .surface-chip`).style.background=state[k];
+  }
+  const selected=paint(state[surface]),source=document.getElementById('paint-source');
+  document.getElementById('selected-name').textContent=name(state[surface]);
+  document.getElementById('selected-code').textContent=code(state[surface]);
+  source.hidden=!selected;
+  if(selected){source.href=selected.url;source.textContent=`View ${selected.name} at Sherwin-Williams ↗`;}
+  document.getElementById('hex-input').value=state[surface].toUpperCase();
+  document.getElementById('color-picker').value=state[surface];
+  document.querySelectorAll('.swatch').forEach(b=>{const active=b.dataset.color===state[surface];b.classList.toggle('active',active);b.setAttribute('aria-pressed',active);});
+  document.getElementById('match-gable').checked=state.matchGable;
+  document.querySelectorAll('.preset').forEach((b,i)=>b.classList.toggle('active',['siding','trim','door'].every(k=>presets[i][k]===state[k])));
+  document.getElementById('saved-count').textContent=saved.length;
+}
 function setColor(hex){if(!validHex(hex))throw new Error('Use a six-digit hex color, such as #6F7D70.');state[surface]=hex.toLowerCase();if(surface==='gable')state.matchGable=false;document.getElementById('color-error').textContent='';update();}
-function renderSwatches(){const filter=document.getElementById('color-family').value;const parent=document.getElementById('swatches');parent.replaceChildren();palette.filter(p=>filter==='all'||p[2]===filter).forEach(([n,c])=>{const b=document.createElement('button');b.className='swatch';b.style.background=c;b.dataset.color=c;b.title=n;b.setAttribute('aria-label',n);b.addEventListener('click',()=>setColor(c));parent.appendChild(b);});update();}
+function renderSwatches(){
+  const filter=document.getElementById('color-family').value;
+  const query=document.getElementById('color-search').value.toLowerCase().replace(/\s+/g,'');
+  const colors=palette.filter(p=>(filter==='all'||p.family===filter)&&`${p.name}${p.code}`.toLowerCase().replace(/\s+/g,'').includes(query));
+  const parent=document.getElementById('swatches');parent.replaceChildren();parent.scrollTop=0;
+  for(const p of colors){
+    const b=document.createElement('button');b.className='swatch';b.style.background=p.hex;b.dataset.color=p.hex;
+    b.title=`${p.name} · ${p.code}`;b.setAttribute('aria-label',b.title);
+    b.addEventListener('click',()=>setColor(p.hex));parent.appendChild(b);
+  }
+  document.getElementById('color-count').textContent=colors.length===palette.length?`${palette.length} exterior colors`:`${colors.length} of ${palette.length} exterior colors`;
+  document.getElementById('no-colors').hidden=colors.length>0;
+  update();
+}
 document.querySelectorAll('[data-surface]').forEach(b=>b.addEventListener('click',()=>{surface=b.dataset.surface;document.querySelectorAll('[data-surface]').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-pressed',x===b);});document.getElementById('match-row').hidden=surface!=='gable';update();}));
 document.getElementById('color-family').addEventListener('change',renderSwatches);
+document.getElementById('color-search').addEventListener('input',renderSwatches);
 document.getElementById('color-picker').addEventListener('input',e=>setColor(e.target.value));
 document.getElementById('hex-input').addEventListener('change',e=>{let c=e.target.value.trim();if(!c.startsWith('#'))c='#'+c;try{setColor(c);}catch(err){document.getElementById('color-error').textContent=err.message;}});
 document.getElementById('hex-input').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur();});
@@ -25,11 +66,35 @@ function miniPalette(colors){const div=document.createElement('span');div.classN
 presets.forEach(p=>{const b=document.createElement('button');b.className='preset';b.appendChild(miniPalette(p));b.append(document.createTextNode(p.name));b.addEventListener('click',()=>{state={...state,...p,gable:p.siding,matchGable:true};update();});document.getElementById('presets').appendChild(b);});
 function persist(){try{localStorage.setItem('westover-looks',JSON.stringify(saved));return true;}catch{toast('Browser storage is unavailable. These looks will last for this visit.');return false;}}
 document.getElementById('save-look').addEventListener('click',()=>{if(saved.some(x=>['siding','trim','door','gable'].every(k=>x.colors[k]===state[k]))){toast('This combination is already saved.');return;}if(saved.length>=24){toast('Your shortlist is full. Remove a look to save another.');return;}saved.push({id:crypto.randomUUID(),name:name(state.siding),colors:{...state}});const ok=persist();update();if(ok)toast('Combination saved to your shortlist.');});
-function renderSaved(){const list=document.getElementById('saved-list');list.replaceChildren();if(!saved.length){const p=document.createElement('p');p.className='empty-state';p.textContent='Find a combination you love, then save it here.';list.append(p);return;}for(const look of saved){const card=document.createElement('div');card.className='saved-card';card.append(miniPalette(look.colors));const detail=document.createElement('div');detail.className='saved-detail';const title=document.createElement('h3');title.textContent=name(look.colors.siding);const meta=document.createElement('p');meta.textContent=`${look.colors.siding.toUpperCase()} · ${name(look.colors.trim)} trim`;detail.append(title,meta);card.append(detail);const apply=document.createElement('button');apply.className='button';apply.textContent='Apply look';apply.addEventListener('click',()=>{state={...state,...look.colors};model?.lighting(state.light);document.querySelectorAll('[data-light]').forEach(b=>{b.classList.toggle('active',b.dataset.light===state.light);b.setAttribute('aria-pressed',b.dataset.light===state.light);});update();document.getElementById('saved-dialog').close();toast('Saved look applied.');});const remove=document.createElement('button');remove.className='remove-look';remove.textContent='×';remove.setAttribute('aria-label','Remove '+name(look.colors.siding)+' combination');remove.addEventListener('click',()=>{saved=saved.filter(x=>x.id!==look.id);persist();update();renderSaved();});card.append(apply,remove);list.append(card);}}
+function renderSaved(){const list=document.getElementById('saved-list');list.replaceChildren();if(!saved.length){const p=document.createElement('p');p.className='empty-state';p.textContent='Find a combination you love, then save it here.';list.append(p);return;}for(const look of saved){const card=document.createElement('div');card.className='saved-card';card.append(miniPalette(look.colors));const detail=document.createElement('div');detail.className='saved-detail';const title=document.createElement('h3');title.textContent=name(look.colors.siding);const meta=document.createElement('p');meta.textContent=`${code(look.colors.siding)} · ${name(look.colors.trim)} trim`;detail.append(title,meta);card.append(detail);const apply=document.createElement('button');apply.className='button';apply.textContent='Apply look';apply.addEventListener('click',()=>{state={...state,...look.colors};model?.lighting(state.light);document.querySelectorAll('[data-light]').forEach(b=>{b.classList.toggle('active',b.dataset.light===state.light);b.setAttribute('aria-pressed',b.dataset.light===state.light);});update();document.getElementById('saved-dialog').close();toast('Saved look applied.');});const remove=document.createElement('button');remove.className='remove-look';remove.textContent='×';remove.setAttribute('aria-label','Remove '+name(look.colors.siding)+' combination');remove.addEventListener('click',()=>{saved=saved.filter(x=>x.id!==look.id);persist();update();renderSaved();});card.append(apply,remove);list.append(card);}}
 for(const [button,dialog] of [['photo-open','photos-dialog'],['saved-open','saved-dialog'],['model-info','info-dialog']])document.getElementById(button).addEventListener('click',()=>{if(dialog==='saved-dialog')renderSaved();document.getElementById(dialog).showModal();});
 document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
 document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();}}));
-document.getElementById('download').addEventListener('click',()=>{if(!model)return;model.render();const source=model.renderer.domElement;const canvas=document.createElement('canvas');canvas.width=source.width;canvas.height=source.height+Math.ceil(160*Math.max(.8,source.width/1200));const ctx=canvas.getContext('2d');ctx.fillStyle='#f9faf7';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(source,0,0);const scale=Math.max(.8,canvas.width/1200);ctx.font=`${20*scale}px sans-serif`;ctx.fillStyle='#284e3c';ctx.fillText('WESTOVER / YOUR COLOR COMBINATION',32,source.height+35);['siding','trim','door','gable'].forEach((k,i)=>{const x=32+i*(canvas.width-64)/4;ctx.fillStyle=state[k];ctx.fillRect(x,source.height+56,24*scale,24*scale);ctx.fillStyle='#53634d';ctx.font=`${13*scale}px sans-serif`;ctx.fillText(`${k.toUpperCase()} ${state[k].toUpperCase()}`,x+32*scale,source.height+73*scale);});ctx.font=`${12*scale}px sans-serif`;ctx.fillStyle='#7f8879';ctx.fillText('Photo-based approximation. Verify paint with physical samples.',32,canvas.height-22);canvas.toBlob(blob=>{if(!blob){toast('Could not export this view. Please try again.');return;}const a=document.createElement('a'),url=URL.createObjectURL(blob);a.download=`westover-${state.siding.slice(1)}.png`;a.href=url;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);toast('Your house view is ready to download.');},'image/png');});
+document.getElementById('download').addEventListener('click',()=>{
+  if(!model)return;
+  model.render();
+  const source=model.renderer.domElement,canvas=document.createElement('canvas');
+  const scale=Math.max(1,1200/source.width);
+  canvas.width=Math.round(source.width*scale);canvas.height=Math.round(source.height*scale)+200;
+  const ctx=canvas.getContext('2d'),y=canvas.height-200;
+  ctx.fillStyle='#f9faf7';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(source,0,0,canvas.width,y);
+  ctx.font='20px sans-serif';ctx.fillStyle='#284e3c';ctx.fillText('WESTOVER / YOUR COLOR COMBINATION',32,y+35);
+  ['siding','trim','door','gable'].forEach((k,i)=>{
+    const x=32+i*(canvas.width-64)/4,labels={siding:'LAP SIDING',trim:'TRIM',door:'FRONT DOOR',gable:'SHINGLE GABLES'};
+    ctx.fillStyle=state[k];ctx.fillRect(x,y+60,26,54);
+    ctx.fillStyle='#53634d';ctx.font='12px sans-serif';ctx.fillText(labels[k],x+36,y+71);
+    ctx.font='15px sans-serif';ctx.fillText(name(state[k]),x+36,y+93,(canvas.width-64)/4-46);
+    ctx.font='13px sans-serif';ctx.fillText(code(state[k]),x+36,y+113);
+  });
+  ctx.font='12px sans-serif';ctx.fillStyle='#7f8879';
+  ctx.fillText('Photo-based approximation. Sherwin-Williams digital colors; verify with physical samples.',32,canvas.height-28);
+  canvas.toBlob(blob=>{
+    if(!blob){toast('Could not export this view. Please try again.');return;}
+    const a=document.createElement('a'),url=URL.createObjectURL(blob);
+    a.download=`westover-${state.siding.slice(1)}.png`;a.href=url;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);toast('Your house view is ready to download.');
+  },'image/png');
+});
 renderSwatches();
 try{model=createHouse(document.getElementById('viewport'),state);}catch(error){document.getElementById('loading').textContent='The 3D view needs WebGL. Try a browser with hardware acceleration enabled.';console.error(error);}
 
@@ -38,7 +103,7 @@ const modelContext=document.modelContext;
 if(modelContext?.registerTool){
   const lifecycle=new AbortController();
   const tools=[{
-    name:'get_house_palette',title:'Read house paint colors',description:'Read the current siding, trim, door and gable colors, with the current lighting and available digital swatches.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:false},execute(){return {colors:{...state},swatches:palette.map(([name,hex])=>({name,hex}))};}
+    name:'get_house_palette',title:'Read house paint colors',description:'Read the current siding, trim, door and shingle gable colors, with the current lighting and Sherwin-Williams exterior swatches.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:false},execute(){return {colors:{...state},swatches:palette.map(({name,code,hex})=>({name,code,hex}))};}
   },{
     name:'set_house_palette',title:'Change house paint colors',description:'Apply hex paint colors to the 3D house. Changes the visible preview only; does not save a combination.',inputSchema:{type:'object',properties:{siding:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},trim:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},door:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},gable:{type:'string',pattern:'^#[0-9a-fA-F]{6}$'},matchGable:{type:'boolean'},light:{type:'string',enum:['day','cloud','evening']}},additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute(input){
       if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Expected a paint palette object.');

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/OrbitControls.js';
+import { createLapBoardGeometry, createGableShingles } from './siding-geometry.js';
 
 export function createHouse(container, colors) {
   const scene = new THREE.Scene();
@@ -24,6 +25,13 @@ export function createHouse(container, colors) {
   controls.target.set(0, 3.6, 0);
   const mat = (c, roughness = .86) => new THREE.MeshStandardMaterial({ color: c, roughness });
   const materials = { siding: mat(colors.siding), gable: mat(colors.gable), trim: mat(colors.trim), door: mat(colors.door) };
+  const sidingReveal = materials.siding.clone(), shingleReveal = materials.gable.clone();
+  function updateReveals() {
+    sidingReveal.color.copy(materials.siding.color).multiplyScalar(.65);
+    shingleReveal.color.copy(materials.gable.color).multiplyScalar(.62);
+  }
+  updateReveals();
+  const lapGeometry = createLapBoardGeometry();
   const roof = mat('#343b3e'), foundation = mat('#686f65'), glass = mat('#23383d', .24), sash = mat('#dddcd3'), wood = mat('#8f7154'), brick = mat('#806353'), stone = mat('#b3ac96');
   glass.metalness = .25;
   const house = new THREE.Group();scene.add(house);
@@ -42,18 +50,20 @@ export function createHouse(container, colors) {
   }
   function wall(width,bottom,top,x,z,rot=0,m=materials.siding){
     // Each overlapping course has a real lower edge to catch grazing light.
-    for(let y=bottom;y<top-.01;y+=.17){const h=Math.min(.17,top-y);plank(width,Math.max(.015,h-.014),.085,x,y+h/2,z,m,rot);}
+    for(let y=bottom;y<top-.01;y+=.19){const h=Math.min(.19,top-y);plank(width,Math.max(.015,h-.018),.085,x,y+h/2,z,m,rot);}
   }
   function rectangle(x0,x1,z0,z1,bottom,top,m=materials.siding){
-    box(x1-x0,top-bottom,z1-z0,(x0+x1)/2,(top+bottom)/2,(z0+z1)/2,m);
-    wall(x1-x0,bottom,top,(x0+x1)/2,z1+.012,0,m);wall(x1-x0,bottom,top,(x0+x1)/2,z0-.012,0,m);
-    wall(z1-z0,bottom,top,x0-.012,(z0+z1)/2,Math.PI/2,m);wall(z1-z0,bottom,top,x1+.012,(z0+z1)/2,Math.PI/2,m);
+    box(x1-x0,top-bottom,z1-z0,(x0+x1)/2,(top+bottom)/2,(z0+z1)/2,m===materials.siding?sidingReveal:m);
+    wall(x1-x0,bottom,top,(x0+x1)/2,z1+.012,0,m);wall(x1-x0,bottom,top,(x0+x1)/2,z0-.012,Math.PI,m);
+    wall(z1-z0,bottom,top,x0-.012,(z0+z1)/2,-Math.PI/2,m);wall(z1-z0,bottom,top,x1+.012,(z0+z1)/2,Math.PI/2,m);
   }
   function gable(width,base,rise,cx,z,rot=0,m=materials.gable){
     const g=new THREE.Group();g.position.set(cx,base,z);g.rotation.y=rot;house.add(g);
     const s=new THREE.Shape();s.moveTo(-width/2,0);s.lineTo(width/2,0);s.lineTo(0,rise);s.closePath();
-    const geo=new THREE.ExtrudeGeometry(s,{depth:.065,bevelEnabled:false});const face=new THREE.Mesh(geo,m);face.castShadow=true;face.receiveShadow=true;g.add(face);
-    for(let y=.085;y<rise;y+=.17){const w=width*(1-y/rise);if(w>.05)box(w,.023,.075,0,y,.034,m,0,g);}
+    const geo=new THREE.ExtrudeGeometry(s,{depth:.065,bevelEnabled:false});const face=new THREE.Mesh(geo,shingleReveal);face.castShadow=true;face.receiveShadow=true;g.add(face);
+    const shingles=new THREE.Mesh(createGableShingles(width,rise),m);
+    shingles.castShadow=true;shingles.receiveShadow=true;g.add(shingles);
+    g.userData.surface='Hardie shingle gable';
     return g;
   }
   function gableRoof(width,depth,base,rise,cx,cz,rotation=0,brackets=true,trimEnds=[-1,1]){
@@ -107,8 +117,9 @@ export function createHouse(container, colors) {
   gable(4.3,3.86,1.11,-2.47,4.18);
   gableRoof(4.3,4,3.86,.80,-2.47,-4.74);
   gable(4.3,3.86,.80,-2.47,-6.8,Math.PI);
-  for(const x of [-4.56,4.56])for(const z of [-6.65,3.86])box(.14,3.05,.14,x,2.39,z);
-  for(const x of [-.35,4.56])for(const z of [-5.45,3.86])box(.14,2.82,.14,x,5.25,z);
+  for(const x of [-4.56,4.56])for(const z of [-6.65,3.86])box(.19,3.05,.19,x,2.39,z);
+  for(const x of [-.35,4.56])for(const z of [-5.45,3.86])box(.19,2.82,.19,x,5.25,z);
+  for(const x of [-4.56,-.34])for(const z of [-2.4,1.45])box(.19,2.53,.19,x,5.115,z);
   box(9.22,.18,10.65,0,.9,-1.4,materials.trim);
   // Two paired upstairs windows, one pair beside the porch.
   windowUnit(.67,5.27,3.91,.84,1.60,0,2);windowUnit(3.11,5.27,3.91,.84,1.60,0,2);
@@ -177,7 +188,7 @@ export function createHouse(container, colors) {
   const number=new THREE.Mesh(new THREE.PlaneGeometry(.18,.36),new THREE.MeshBasicMaterial({map:numberTex,transparent:true}));number.position.set(1.28,2.9,6.613);house.add(number);
   box(.15,.21,.15,-2.12,3.47,5.87,mat('#414639'));
   // Batch repeated siding boards into just two draw calls.
-  for(const [m,transforms] of batches){const instances=new THREE.InstancedMesh(cube,m,transforms.length);transforms.forEach((a,i)=>instances.setMatrixAt(i,a));instances.castShadow=true;instances.receiveShadow=true;house.add(instances);}
+  for(const [m,transforms] of batches){const instances=new THREE.InstancedMesh(lapGeometry,m,transforms.length);transforms.forEach((a,i)=>instances.setMatrixAt(i,a));instances.castShadow=true;instances.receiveShadow=true;house.add(instances);}
   const environment=new THREE.Group();scene.add(environment);
   // A gently sloping miniature lot keeps the exposed basement believable.
   function groundY(z){return z>4 ? -.12 : Math.max(-2.45,-.12-(4-z)*.24);}
@@ -210,5 +221,5 @@ export function createHouse(container, colors) {
   const observer=new ResizeObserver(resize);observer.observe(container);resize();view('perspective',true);
   renderer.setAnimationLoop(()=>{if(animation){const t=Math.min(1,(performance.now()-animation.start)/650),e=1-Math.pow(1-t,3);camera.position.lerpVectors(animation.from,animation.to,e);controls.target.lerpVectors(animation.fromTarget,new THREE.Vector3(0,3.6,0),e);if(t===1)animation=null;}controls.update();renderer.render(scene,camera);});
   document.getElementById('loading')?.remove();
-  return {setColors(next){for(const k in materials)if(next[k])materials[k].color.set(next[k]);},view,lighting,renderer,scene,camera,materials,render(){renderer.render(scene,camera);},dispose(){observer.disconnect();renderer.setAnimationLoop(null);controls.dispose();renderer.dispose();}};
+  return {setColors(next){for(const k in materials)if(next[k])materials[k].color.set(next[k]);updateReveals();},view,lighting,renderer,scene,camera,materials,render(){renderer.render(scene,camera);},dispose(){observer.disconnect();renderer.setAnimationLoop(null);controls.dispose();renderer.dispose();}};
 }

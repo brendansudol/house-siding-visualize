@@ -14,7 +14,7 @@ The GitHub Pages site and this repository are public, including the reference ph
 
 ## Model assumptions
 
-Photo-derived approximation, not measured geometry. Main front gable, left porch, side cross gable, window rhythm, roof, trim, chimney, rear posts and exposed basement are represented. Hidden roof intersections, unobserved window placements, overall dimensions and landscape are inferred. Lighting presets are illustrative and not a geolocated sun simulation. Swatches are descriptive digital colors, not manufacturer matches. Verify choices with physical paint samples.
+Photo-derived approximation, not measured geometry. Main front gable, left porch, side cross gable, window rhythm, roof, trim, chimney, rear posts and exposed basement are represented. Hidden roof intersections, unobserved window placements, overall dimensions and landscape are inferred. Lighting presets are illustrative and not a geolocated sun simulation. The body uses profiled lap siding, and the gables use staggered shingle courses. Gables match the siding by default and can be assigned a separate color. The 145 paint swatches use Sherwin-Williams’ published digital values from its exterior house, accent, and front-door collections, filtered to active colors marked for exterior use. Names, SW numbers, and source links are stored in `dist/paint-colors.js`; these are digital representations, not calibrated renderings. Verify choices with physical paint samples.
 
 ## Agent tools
 
@@ -25,3 +25,7 @@ When the browser supports `document.modelContext`, `get_house_palette` and `set_
 The site is published at https://brendansudol.github.io/house-siding-visualize/.
 
 The `Deploy to GitHub Pages` workflow publishes `dist/` when that folder or the workflow changes on `main`. It can also be run manually from GitHub Actions. Repository **Settings → Pages → Source** must be set to **GitHub Actions**. The app uses relative asset paths so it works under the repository subpath without a build step.
+
+## Refresh the paint palette
+
+Run `python3 scripts/update-sw-palette.py` to fetch current data from Sherwin-Williams’ public exterior collections and regenerate `dist/paint-colors.js`. This is a maintenance step only; the website uses the checked-in data without external API requests.
