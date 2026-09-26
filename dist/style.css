@@ -22,3 +22,16 @@
 @media(max-width:640px){main{display:flex}.stage-heading{max-width:80%}.stage-heading .eyebrow{font-size:11px}.surface>span:nth-child(2){font-size:14px}.surface small{font-size:12px;max-width:120px}.gesture-hint{font-size:10px}.panel-actions .button{font-size:13px}.surface{padding:12px 10px}.preset-list{min-width:0}.brand-sub{font-size:9px}.scene-top{right:15px}.scene-top .icon-button{width:32px;height:32px}.bottom-strip{gap:15px}.saved-open{font-size:12px}.strip-title h3{font-size:16px}.section-label{font-size:12px}.segmented button{font-size:14px}.swatch{width:40px;height:40px}}
 @media(min-width:641px){main{background:#e9ede7}.stage{position:sticky;top:0;align-self:start;height:calc(100dvh - 91px);min-height:520px;max-height:1000px}}
 @media(min-width:641px) and (max-width:850px){.stage{height:calc(100dvh - 76px)}}
+
+/* Browse the full exterior catalog and official shade strips. */
+.catalog-badge{font-size:11px;font-weight:400;letter-spacing:0;color:#71806b}
+.family-filter{display:block;margin-bottom:8px}.family-filter select{width:100%;max-width:none;min-height:40px;border:1px solid var(--line);border-radius:6px;padding:9px 10px;background:#fafbf8;color:#334531;font-size:14px}
+.tone-filter{margin-top:9px}.tone-filter button{font-size:12px;min-height:34px;padding:6px 3px}
+.palette-meta{display:flex;align-items:center;justify-content:space-between;gap:4px}.palette-meta button{border:0;background:none;text-decoration:underline;text-underline-offset:3px;padding:8px 0;font-size:11px;color:#52704e}
+.swatch-hint{font-size:11px;color:#71806b;margin:0 0 8px;line-height:1.5}
+.swatches{max-height:260px;gap:9px;padding:6px;overscroll-behavior:contain;border:1px solid var(--line);border-radius:6px;grid-template-columns:repeat(6,minmax(0,1fr))}
+.swatch{width:100%;height:36px;border-radius:4px;border:1px solid #0000000d}.swatch.active:before{inset:-3px;border-radius:6px;border-width:2px}.swatch-family{grid-column:1 / -1;font-size:11px;color:#71806b;padding:7px 0 2px}.swatch-family:first-child{padding-top:2px}
+.selected-lrv{font-size:11px;color:#71806b;margin:-8px 0 12px}.selected-lrv:empty{display:none}
+.related-colors{margin:0 0 16px}.related-heading{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#71806b;margin-bottom:8px}.related-heading span:last-child{white-space:nowrap}
+.related-swatches{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;padding:3px}.strip-swatch{height:35px}.strip-swatch.active:before{inset:-2px}
+@media(max-width:640px){.swatches{max-height:280px}.swatch{height:42px}.tone-filter button{min-height:40px}.swatch-hint,.related-heading,.selected-lrv{font-size:12px}}
